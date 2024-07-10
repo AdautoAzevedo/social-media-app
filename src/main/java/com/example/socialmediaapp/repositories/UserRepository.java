@@ -5,6 +5,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.example.socialmediaapp.models.User;
 
-public interface UserRepository extends JpaRepository<User, String>{
-    UserDetails findByLogin(String login);
+public interface UserRepository extends JpaRepository<User, Long>{
+    UserDetails findByUsername(String login);
 }
