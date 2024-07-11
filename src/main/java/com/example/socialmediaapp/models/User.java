@@ -18,7 +18,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "social-app-users")
+@Table(name = "social_app_users")
 @Getter
 @Setter
 @AllArgsConstructor

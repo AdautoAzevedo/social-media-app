@@ -32,9 +32,13 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity login(@RequestBody AuthenticationDTO data) {
         var usernamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.password());
+        System.out.println(data.login());
+        System.out.println(data.password());
 
         try {
+            System.out.println(usernamePassword);
             var auth = this.authenticationManager.authenticate(usernamePassword);
+            System.out.println(auth);
             if (auth.getPrincipal() instanceof UserPrincipal) {
                 var userPrincipal = (UserPrincipal) auth.getPrincipal();
                 var token = tokenService.generateToken(userPrincipal);
@@ -49,12 +53,24 @@ public class AuthenticationController {
 
     @PostMapping("/register")
     public ResponseEntity register(@RequestBody RegisterDTO data) {
-        if (this.userRepository.findByLogin(data.login()) != null) return ResponseEntity.badRequest().build();
+        if (data.login() == null || data.password() == null || data.name() == null) {
+            return ResponseEntity.badRequest().body("All fields are required.");
+        }
 
-        String encryptedPassword = new BCryptPasswordEncoder().encode(data.password());
-        User newUser = new User(data.login(), encryptedPassword, data.name());
-        this.userRepository.save(newUser);
+        if (this.userRepository.findByUsername(data.login()) != null) return ResponseEntity.badRequest().build();
 
-        return ResponseEntity.ok().build();
+        
+
+        try {
+            String encryptedPassword = new BCryptPasswordEncoder().encode(data.password());
+            User newUser = new User(data.login(), encryptedPassword, data.name());
+            this.userRepository.save(newUser);
+
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            System.out.println(e);
+            return null;
+        }
+       
     }
 }

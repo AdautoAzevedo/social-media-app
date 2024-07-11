@@ -6,6 +6,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import com.example.socialmediaapp.models.User;
+import com.example.socialmediaapp.models.UserPrincipal;
 import com.example.socialmediaapp.repositories.UserRepository;
 
 @Service
@@ -15,7 +17,10 @@ public class UserDetailsServiceImpl implements UserDetailsService{
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByLogin(username);
+        User user =  userRepository.findByUsername(username);
+        System.out.println(user);
+
+        return new UserPrincipal(user);
     }
 
    
