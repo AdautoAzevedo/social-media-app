@@ -15,6 +15,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
@@ -22,6 +23,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 public class User{
 
     @Id
@@ -39,9 +41,9 @@ public class User{
     @OneToMany(mappedBy = "user")
     private List<Comment> comments;
     
-    public User(String login, String encryptedPassword, String name) {
+    public User(String username, String encryptedPassword, String name) {
         this.name = name;
-        this.username = login;
+        this.username = username;
         this.password = encryptedPassword;
     }
 }

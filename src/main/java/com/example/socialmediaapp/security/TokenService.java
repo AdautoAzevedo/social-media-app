@@ -4,25 +4,27 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.example.socialmediaapp.models.User;
+import com.example.socialmediaapp.models.UserPrincipal;
 
 @Service
 public class TokenService {
     
+    @Value("${api.security.token.secret}")
     private String secret;
 
-    public String generateToken(User user) {
+    public String generateToken(UserPrincipal userPrincipal) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             String token = JWT.create()
                     .withIssuer("social-media-java")
-                    .withSubject(user.getUsername())
+                    .withSubject(userPrincipal.getUsername())
                     .withExpiresAt(genExpirationDate())
                     .sign(algorithm);
             return token;

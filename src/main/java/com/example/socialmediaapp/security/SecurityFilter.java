@@ -1,6 +1,7 @@
 package com.example.socialmediaapp.security;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -9,6 +10,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.example.socialmediaapp.models.User;
+import com.example.socialmediaapp.models.UserPrincipal;
 import com.example.socialmediaapp.repositories.UserRepository;
 
 import jakarta.servlet.FilterChain;
@@ -25,15 +28,22 @@ public class SecurityFilter extends OncePerRequestFilter{
     UserRepository userRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         var token = this.recoverToken(request);
+       
         if (token != null) {
-            var login = tokenService.validateToken(token);
-            UserDetails user = userRepository.findByLogin(login);
-            var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+           
+            var username = tokenService.validateToken(token);
+           
+            Optional<User> userOptional = userRepository.findByUsername(username);
+
+            User user = userOptional.get();
+            UserDetails userDetails = new UserPrincipal(user);
+
+            var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
+
         filterChain.doFilter(request, response);
     }
 
