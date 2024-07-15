@@ -1,6 +1,10 @@
 package com.example.socialmediaapp.services;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.example.socialmediaapp.models.Comment;
@@ -24,15 +28,18 @@ public class CommentService {
     private UserRepository userRepository;
 
     @Transactional
-    public Comment addComment(Long userId, Long postId, String text) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
-
-        Comment comment = new Comment();
-        comment.setUser(user);
-        comment.setPost(post);
-        comment.setText(text);
-
+    public Comment addComment(Comment comment, Long postId ) {
+        User currentUser = getAuthenticatedUser();
+        Optional<Post> currentPost = postRepository.findById(postId);
+        comment.setPost(currentPost.get());
+        comment.setUser(currentUser);
         return commentRepository.save(comment);
+    }
+
+    private User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }
