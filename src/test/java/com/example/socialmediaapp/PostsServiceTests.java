@@ -6,6 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +47,6 @@ public class PostsServiceTests {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.setContext(securityContext);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
     }
 
     @Test
@@ -55,6 +55,7 @@ public class PostsServiceTests {
         Post post = new Post();
         post.setCaption("Test caption");
 
+        when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getName()).thenReturn("testUser");
         when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
         when(postRepository.save(any(Post.class))).thenReturn(post);
@@ -66,4 +67,35 @@ public class PostsServiceTests {
 
     }
 
+    @Test
+    public void testGetPostForCurrentUser() {
+        User user = new User();
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn("testUser");
+        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
+        when(postRepository.findByUser(user)).thenReturn(List.of(new Post()));
+
+        assertEquals(1, postsService.getPostsForCurrentUser().size());
+        verify(postRepository, times(1)).findByUser(user);
+    }
+
+    @Test
+    public void testEditPost() {
+        User user = new User();
+        Post existingPost = new Post();
+        existingPost.setUser(user);
+        existingPost.setId(1L);
+
+        Post updatedDetails = new Post();
+        updatedDetails.setCaption("Updated Caption");
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(existingPost));
+        when(postRepository.save(existingPost)).thenReturn(existingPost);
+
+        Post updatedPost = postsService.editPost(1L, updatedDetails);
+        assertEquals("Updated Caption", updatedPost.getCaption());
+        verify(postRepository, times(1)).save(existingPost);
+
+    }
 }
