@@ -6,6 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -73,8 +74,36 @@ public class CommentServiceTests {
         assertEquals(1L, createdComment.getPost().getId());
         assertEquals(user, createdComment.getUser());
         verify(commentRepository, times(1)).save(comment);
+    }
 
+    @Test
+    public void testGetCommentById() {
+        Comment comment = new Comment();
+        comment.setId(1L);
 
+        when(commentRepository.findById(1L)).thenReturn(Optional.of(comment));
+
+        Comment foundComment = commentService.getCommentById(1L);
+
+        assertEquals(comment, foundComment);
+    }
+
+    @Test
+    public void testGetCommentsForPosts() {
+
+    }
+
+    @Test public void testGetCommentsForUser() {
+        User user = new User();
+
+        when(authentication.getName()).thenReturn("testUser");
+        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
+        when(commentRepository.findByUser(user)).thenReturn(List.of(new Comment(), new Comment()));
+
+        List<Comment> comments = commentService.getCommentsForUser();
+
+        assertEquals(2, comments.size());
+        verify(commentRepository, times(1)).findByUser(user);
     }
 
 

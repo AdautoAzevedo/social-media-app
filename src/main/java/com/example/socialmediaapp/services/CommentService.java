@@ -1,5 +1,6 @@
 package com.example.socialmediaapp.services;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,38 @@ public class CommentService {
         comment.setPost(currentPost.get());
         comment.setUser(currentUser);
         return commentRepository.save(comment);
+    }
+
+    public Comment getCommentById(Long commentId) {
+        Optional<Comment> comment = commentRepository.findById(commentId);
+        return comment.get();
+    }
+
+    public List<Comment> getCommentsForPosts(Long postId) {
+        Post post = postRepository.findById(postId)
+            .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        return commentRepository.findByPost(post);
+    }
+
+    public List<Comment> getCommentsForUser() {
+        User user = getAuthenticatedUser();
+        return commentRepository.findByUser(user);
+    }
+
+    public Comment editComment(Long commentId ,Comment correctedComment) {
+        Comment comment = commentRepository.findById(commentId)
+            .orElseThrow(() -> new RuntimeException("Comment not found"));
+
+        comment.setText(correctedComment.getText());
+        return commentRepository.save(comment);
+    }
+
+    public void deleteComment(Long commentId) {
+        Comment comment = commentRepository.findById(commentId)
+            .orElseThrow(() -> new RuntimeException("Comment not found"));
+
+        commentRepository.delete(comment);
     }
 
     private User getAuthenticatedUser() {
