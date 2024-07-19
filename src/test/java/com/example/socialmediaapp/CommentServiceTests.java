@@ -51,7 +51,6 @@ public class CommentServiceTests {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.setContext(securityContext);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
     }
 
 
@@ -64,6 +63,8 @@ public class CommentServiceTests {
         comment.setText("Test text");
         post.setId(1L);
 
+        
+        when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getName()).thenReturn("TestUser");
         when(userRepository.findByUsername("TestUser")).thenReturn(Optional.of(user));
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
@@ -86,16 +87,28 @@ public class CommentServiceTests {
         Comment foundComment = commentService.getCommentById(1L);
 
         assertEquals(comment, foundComment);
+        verify(commentRepository, times(1)).findById(1L);
     }
 
     @Test
     public void testGetCommentsForPosts() {
+        Post post = new Post();
+        post.setId(1L);
 
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(commentRepository.findByPost(post)).thenReturn(List.of(new Comment(), new Comment()));
+
+        List<Comment> comments = commentService.getCommentsForPosts(1L);
+
+        assertEquals(2, comments.size());
+        verify(commentRepository, times(1)).findByPost(post);
     }
 
-    @Test public void testGetCommentsForUser() {
+    @Test 
+    public void testGetCommentsForUser() {
         User user = new User();
 
+        when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getName()).thenReturn("testUser");
         when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
         when(commentRepository.findByUser(user)).thenReturn(List.of(new Comment(), new Comment()));
@@ -106,7 +119,48 @@ public class CommentServiceTests {
         verify(commentRepository, times(1)).findByUser(user);
     }
 
+    @Test
+    public void testEditComment() {
+        User user = new User();
+        Comment existingComment = new Comment();
+        existingComment.setId(1L);
+        existingComment.setUser(user);
+        existingComment.setText("Text to be changed");
+
+        Comment commentDetails = new Comment();
+        commentDetails.setText("New text");
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn("testUser");
+        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
+        when(commentRepository.findById(1L)).thenReturn(Optional.of(existingComment));
+        when(commentRepository.save(existingComment)).thenReturn(existingComment);
+
+        Comment updatedComment = commentService.editComment(1L, commentDetails);
+
+        assertEquals("New text", updatedComment.getText());
+        assertEquals(existingComment.getId(), updatedComment.getId());
+        verify(commentRepository, times(1)).save(existingComment);
+        verify(commentRepository, times(1)).findById(1L);
 
 
+    }
 
+    @Test
+    public void testDeleteComment() {
+        User user = new User();
+        Comment comment = new Comment();
+        comment.setId(1L);
+        comment.setUser(user);
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn("testUser");
+        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
+        when(commentRepository.findById(1L)).thenReturn(Optional.of(comment));
+        
+        commentService.deleteComment(1L);
+        verify(commentRepository, times(1)).findById(1L);
+        verify(commentRepository, times(1)).delete(comment);
+
+    }
 }

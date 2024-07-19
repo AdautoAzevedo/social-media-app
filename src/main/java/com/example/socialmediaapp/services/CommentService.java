@@ -58,6 +58,11 @@ public class CommentService {
         Comment comment = commentRepository.findById(commentId)
             .orElseThrow(() -> new RuntimeException("Comment not found"));
 
+        User currentUser = getAuthenticatedUser();
+        if (!comment.getUser().equals(currentUser)) {
+            throw new RuntimeException("Unauthorized");
+        }
+
         comment.setText(correctedComment.getText());
         return commentRepository.save(comment);
     }
@@ -65,6 +70,11 @@ public class CommentService {
     public void deleteComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
             .orElseThrow(() -> new RuntimeException("Comment not found"));
+
+        User currentUser = getAuthenticatedUser();
+        if (!comment.getUser().equals(currentUser)) {
+            throw new RuntimeException("Unauthorized");
+        }
 
         commentRepository.delete(comment);
     }
