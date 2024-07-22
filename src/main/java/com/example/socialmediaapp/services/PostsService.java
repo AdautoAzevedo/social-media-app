@@ -2,13 +2,12 @@ package com.example.socialmediaapp.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.example.socialmediaapp.dtos.PostRecordDTO;
 import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.models.User;
 import com.example.socialmediaapp.repositories.PostRepository;
@@ -25,35 +24,49 @@ public class PostsService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private AuxMethods auxMethods;
+
     @Transactional
-    public Post addPost(Post post) {
-        User currentUser = getAuthenticatedUser();
+    public PostRecordDTO addPost(Post post) {
+        User currentUser = auxMethods.getAuthenticatedUser();
         post.setUser(currentUser);
-        return postRepository.save(post);
+        Post createdPost = postRepository.save(post);
+        return auxMethods.convertToPostRecordDTO(createdPost);
     }
 
-    public List<Post> getPostsForCurrentUser() {
-        User user = getAuthenticatedUser();
-        return postRepository.findByUser(user);
+    public List<PostRecordDTO> getPostsForCurrentUser() {
+        User user = auxMethods.getAuthenticatedUser();
+        List<Post> posts = postRepository.findByUser(user);
+        return posts.stream()
+                .map(auxMethods::convertToPostRecordDTO)
+                .collect(Collectors.toList());
     }
 
-    public Optional<Post> getPostById(Long postId) {
-        return postRepository.findById(postId);
+    public PostRecordDTO getPostById(Long postId) {
+        Optional<Post> post = postRepository.findById(postId);
+        return auxMethods.convertToPostRecordDTO(post.get());
     }
 
-    public Post editPost(Long postId, Post correctedPost) {
+    public PostRecordDTO editPost(Long postId, Post correctedPost) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        User currentUser = auxMethods.getAuthenticatedUser();
+        if (!post.getUser().equals(currentUser)) {
+            throw new RuntimeException("Unauthorized");
+        }
         
         post.setCaption(correctedPost.getCaption());
-        return postRepository.save(post);
+        Post updatedPost = postRepository.save(post);
+        return auxMethods.convertToPostRecordDTO(updatedPost);
     }
 
     public void deletePost(Long postId) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        User currentUser = getAuthenticatedUser();
+        User currentUser = auxMethods.getAuthenticatedUser();
         if (!post.getUser().equals(currentUser)) {
             throw new RuntimeException("Unauthorized");
         }
@@ -61,10 +74,5 @@ public class PostsService {
         postRepository.delete(post);
     }
 
-    private User getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        return userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-    }
+    
 }

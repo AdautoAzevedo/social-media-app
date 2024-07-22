@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.socialmediaapp.dtos.PostRecordDTO;
 import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.services.PostsService;
 
@@ -30,35 +32,40 @@ public class PostController {
     }
 
     @GetMapping("/")
-    public ResponseEntity<List<Post>> getPostsForCurrentUser() {
-        List<Post> posts = postsService.getPostsForCurrentUser();
+    public ResponseEntity<List<PostRecordDTO>> getPostsForCurrentUser() {
+        System.out.println("GET method called");
+        List<PostRecordDTO> posts = postsService.getPostsForCurrentUser();
         return ResponseEntity.ok(posts);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Post> getPostById(@RequestParam Long postId) {
-        Optional<Post> post = postsService.getPostById(postId);
-        return post.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    @GetMapping("/{postId}")
+    public ResponseEntity<PostRecordDTO> getPostById(@PathVariable Long postId) {
+        try {
+            PostRecordDTO post = postsService.getPostById(postId);
+            return ResponseEntity.ok(post);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PostMapping("/add")
-    public ResponseEntity<Post> addPost(@RequestBody Post post) {
-        Post createdPost = postsService.addPost(post);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdPost);
+    public ResponseEntity<PostRecordDTO> addPost(@RequestBody Post post) {
+        PostRecordDTO postRecordDTO = postsService.addPost(post);
+        return ResponseEntity.status(HttpStatus.CREATED).body(postRecordDTO);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Post> editPost(@RequestParam Long postId, @RequestBody Post correctedPost) {
+    @PutMapping("/{postId}")
+    public ResponseEntity<PostRecordDTO> editPost(@PathVariable Long postId, @RequestBody Post correctedPost) {
         try {
-            Post updatedPost = postsService.editPost(postId, correctedPost);
+            PostRecordDTO updatedPost = postsService.editPost(postId, correctedPost);
             return ResponseEntity.ok(updatedPost);
         } catch (Exception e) {
            return ResponseEntity.status(403).body(null);
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePost(@RequestParam Long postId) {
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
         try {
             postsService.deletePost(postId);
             return ResponseEntity.noContent().build();

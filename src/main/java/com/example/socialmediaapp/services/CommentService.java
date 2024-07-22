@@ -2,12 +2,15 @@ package com.example.socialmediaapp.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.example.socialmediaapp.dtos.CommentDTO;
+import com.example.socialmediaapp.dtos.CommentResponseDTO;
 import com.example.socialmediaapp.models.Comment;
 import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.models.User;
@@ -28,50 +31,62 @@ public class CommentService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private AuxMethods auxMethods;
+
     @Transactional
-    public Comment addComment(Comment comment, Long postId ) {
-        User currentUser = getAuthenticatedUser();
-        Optional<Post> currentPost = postRepository.findById(postId);
+    public CommentResponseDTO addComment(CommentDTO commentDTO ) {
+        User currentUser = auxMethods.getAuthenticatedUser();
+        Optional<Post> currentPost = postRepository.findById(commentDTO.postId());
+        Comment comment = new Comment();
         comment.setPost(currentPost.get());
         comment.setUser(currentUser);
-        return commentRepository.save(comment);
+        comment.setText(commentDTO.text());
+        Comment createdComment = commentRepository.save(comment);
+        return auxMethods.convertToCommentResponseDTO(createdComment);
     }
 
-    public Comment getCommentById(Long commentId) {
+    public CommentResponseDTO getCommentById(Long commentId) {
         Optional<Comment> comment = commentRepository.findById(commentId);
-        return comment.get();
+        return auxMethods.convertToCommentResponseDTO(comment.get());
     }
 
-    public List<Comment> getCommentsForPosts(Long postId) {
+    public List<CommentResponseDTO> getCommentsForPosts(Long postId) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new RuntimeException("Post not found"));
         
-        return commentRepository.findByPost(post);
+        List<Comment> comments = commentRepository.findByPost(post);
+        return comments.stream()
+                .map(auxMethods::convertToCommentResponseDTO)
+                .collect(Collectors.toList());
     }
 
-    public List<Comment> getCommentsForUser() {
-        User user = getAuthenticatedUser();
-        return commentRepository.findByUser(user);
+    public List<CommentResponseDTO> getCommentsForUser() {
+        User user = auxMethods.getAuthenticatedUser();
+        List<Comment> comments = commentRepository.findByUser(user);
+        return comments.stream()
+                .map(auxMethods::convertToCommentResponseDTO)
+                .collect(Collectors.toList());
     }
 
-    public Comment editComment(Long commentId ,Comment correctedComment) {
+    public CommentResponseDTO editComment(Long commentId ,Comment correctedComment) {
         Comment comment = commentRepository.findById(commentId)
             .orElseThrow(() -> new RuntimeException("Comment not found"));
 
-        User currentUser = getAuthenticatedUser();
+        User currentUser = auxMethods.getAuthenticatedUser();
         if (!comment.getUser().equals(currentUser)) {
             throw new RuntimeException("Unauthorized");
         }
 
         comment.setText(correctedComment.getText());
-        return commentRepository.save(comment);
+        return auxMethods.convertToCommentResponseDTO(commentRepository.save(comment));
     }
 
     public void deleteComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
             .orElseThrow(() -> new RuntimeException("Comment not found"));
 
-        User currentUser = getAuthenticatedUser();
+        User currentUser = auxMethods.getAuthenticatedUser();
         if (!comment.getUser().equals(currentUser)) {
             throw new RuntimeException("Unauthorized");
         }
@@ -79,10 +94,5 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 
-    private User getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        return userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-    }
+
 }
