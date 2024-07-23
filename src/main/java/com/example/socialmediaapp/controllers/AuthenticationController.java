@@ -1,5 +1,7 @@
 package com.example.socialmediaapp.controllers;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,8 +57,12 @@ public class AuthenticationController {
         if (data.username() == null || data.password() == null || data.name() == null) {
             return ResponseEntity.badRequest().body("All fields are required.");
         }
-
-        if (this.userRepository.findByUsername(data.username()) != null) return ResponseEntity.badRequest().build();
+       
+        Optional<User> userOptional = userRepository.findByUsername(data.username());
+        
+        if (userOptional.isPresent()) {
+            return ResponseEntity.badRequest().body("User already exists");
+        }
 
         try {
             String encryptedPassword = new BCryptPasswordEncoder().encode(data.password());
@@ -66,7 +72,7 @@ public class AuthenticationController {
             return ResponseEntity.ok().build();
         } catch (AuthenticationException e) {
             System.out.println(e.getMessage());
-            return null;
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error occurred during registration.");
         }
        
     }
