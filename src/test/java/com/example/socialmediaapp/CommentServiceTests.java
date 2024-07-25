@@ -70,6 +70,9 @@ public class CommentServiceTests {
         mockComment.setText("test comment");
         mockComment.setUser(mockUser);
         mockComment.setPost(mockPost);
+
+        CommentDTO commentDTO = new CommentDTO(1L, "test comment");
+        UserDTO userDTO = new UserDTO(1L, "testuser");
     }
 
 
@@ -91,91 +94,93 @@ public class CommentServiceTests {
 
        verify(commentRepository, times(1)).save(any(Comment.class));
     } 
-/* 
+ 
     @Test
     public void testGetCommentById() {
-        Comment comment = new Comment();
-        comment.setId(1L);
+        UserDTO userDTO = new UserDTO(1L, "testuser");
+        CommentResponseDTO commentResponseDTO = new CommentResponseDTO(1L, "test comment", userDTO);
 
-        when(commentRepository.findById(1L)).thenReturn(Optional.of(comment));
+        when(commentRepository.findById(anyLong())).thenReturn(Optional.of(mockComment));
+        when(auxMethods.convertToCommentResponseDTO(any(Comment.class))).thenReturn(commentResponseDTO);
 
-        Comment foundComment = commentService.getCommentById(1L);
+        CommentResponseDTO responseDTO = commentService.getCommentById(1L);
 
-        assertEquals(comment, foundComment);
-        verify(commentRepository, times(1)).findById(1L);
+        assertNotNull(responseDTO);
+        assertEquals(1L, responseDTO.commentId());
+        assertEquals("test comment", responseDTO.text());
+        assertEquals("testuser", responseDTO.userDTO().username());
+        verify(commentRepository, times(1)).findById(anyLong());
+
     }
 
     @Test
     public void testGetCommentsForPosts() {
-        Post post = new Post();
-        post.setId(1L);
+        UserDTO userDTO = new UserDTO(1L, "testuser");
+        CommentResponseDTO commentResponseDTO = new CommentResponseDTO(1L, "test comment", userDTO);
 
-        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(commentRepository.findByPost(post)).thenReturn(List.of(new Comment(), new Comment()));
+        when(postRepository.findById(1L)).thenReturn(Optional.of(mockPost));
+        when(commentRepository.findByPost(any(Post.class))).thenReturn(List.of(mockComment));
+        when(auxMethods.convertToCommentResponseDTO(any(Comment.class))).thenReturn(commentResponseDTO);
 
-        List<Comment> comments = commentService.getCommentsForPosts(1L);
+        List<CommentResponseDTO> responseDTOs = commentService.getCommentsForPosts(1L);
+        assertEquals(1, responseDTOs.size());
 
-        assertEquals(2, comments.size());
-        verify(commentRepository, times(1)).findByPost(post);
+        assertEquals(1L, responseDTOs.get(0).commentId());
+        assertEquals("test comment", responseDTOs.get(0).text());
+        assertEquals("testuser", responseDTOs.get(0).userDTO().username());
+
+        verify(commentRepository, times(1)).findByPost(any(Post.class));
     }
 
+    
     @Test 
     public void testGetCommentsForUser() {
-        User user = new User();
+        UserDTO userDTO = new UserDTO(1L, "testuser");
+        CommentResponseDTO commentResponseDTO = new CommentResponseDTO(1L, "test comment", userDTO);
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("testUser");
-        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
-        when(commentRepository.findByUser(user)).thenReturn(List.of(new Comment(), new Comment()));
+        when(auxMethods.getAuthenticatedUser()).thenReturn(mockUser);
+        when(commentRepository.findByUser(any(User.class))).thenReturn(List.of(mockComment));
+        when(auxMethods.convertToCommentResponseDTO(any(Comment.class))).thenReturn(commentResponseDTO);
 
-        List<Comment> comments = commentService.getCommentsForUser();
+        List<CommentResponseDTO> responseDTOs = commentService.getCommentsForUser();
 
-        assertEquals(2, comments.size());
-        verify(commentRepository, times(1)).findByUser(user);
+        assertEquals(1, responseDTOs.size());
+        assertEquals(1L, responseDTOs.get(0).commentId());
+        assertEquals("test comment", responseDTOs.get(0).text());
+        assertEquals("testuser", responseDTOs.get(0).userDTO().username());
+        verify(commentRepository, times(1)).findByUser(any(User.class));
     }
 
     @Test
     public void testEditComment() {
-        User user = new User();
-        Comment existingComment = new Comment();
-        existingComment.setId(1L);
-        existingComment.setUser(user);
-        existingComment.setText("Text to be changed");
+        UserDTO userDTO = new UserDTO(1L, "testuser");
+        CommentResponseDTO commentResponseDTO = new CommentResponseDTO(1L, "updated comment", userDTO);
+        
+        when(commentRepository.findById(anyLong())).thenReturn(Optional.of(mockComment));
+        when(auxMethods.getAuthenticatedUser()).thenReturn(mockUser);
+        when(commentRepository.save(any(Comment.class))).thenReturn(mockComment);
+        when(auxMethods.convertToCommentResponseDTO(any(Comment.class))).thenReturn(commentResponseDTO);
+      
+        Comment correctedComment = new Comment();
+        correctedComment.setText("updated comment");
 
-        Comment commentDetails = new Comment();
-        commentDetails.setText("New text");
+        CommentResponseDTO responseDTO = commentService.editComment(1L, correctedComment);
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("testUser");
-        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
-        when(commentRepository.findById(1L)).thenReturn(Optional.of(existingComment));
-        when(commentRepository.save(existingComment)).thenReturn(existingComment);
+        assertNotNull(responseDTO);
+        assertEquals(1L, responseDTO.commentId());
+        assertEquals("updated comment", responseDTO.text());
+        assertEquals("testuser", responseDTO.userDTO().username());
 
-        Comment updatedComment = commentService.editComment(1L, commentDetails);
-
-        assertEquals("New text", updatedComment.getText());
-        assertEquals(existingComment.getId(), updatedComment.getId());
-        verify(commentRepository, times(1)).save(existingComment);
-        verify(commentRepository, times(1)).findById(1L);
-
-
+        verify(commentRepository, times(1)).save(any(Comment.class));
     }
 
     @Test
     public void testDeleteComment() {
-        User user = new User();
-        Comment comment = new Comment();
-        comment.setId(1L);
-        comment.setUser(user);
+        when(commentRepository.findById(anyLong())).thenReturn(Optional.of(mockComment));
+        when(auxMethods.getAuthenticatedUser()).thenReturn(mockUser);
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("testUser");
-        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
-        when(commentRepository.findById(1L)).thenReturn(Optional.of(comment));
-        
         commentService.deleteComment(1L);
-        verify(commentRepository, times(1)).findById(1L);
-        verify(commentRepository, times(1)).delete(comment);
 
-    } */
+        verify(commentRepository, times(1)).delete(any(Comment.class));
+    } 
 }
