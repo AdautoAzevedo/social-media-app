@@ -14,16 +14,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
+
+import com.example.socialmediaapp.dtos.PostRecordDTO;
 import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.models.User;
 import com.example.socialmediaapp.repositories.PostRepository;
-import com.example.socialmediaapp.repositories.UserRepository;
+import com.example.socialmediaapp.services.AuxMethods;
 import com.example.socialmediaapp.services.PostsService;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,69 +31,84 @@ public class PostsServiceTests {
     private PostRepository postRepository;
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private SecurityContext securityContext;
-
-    @Mock
-    private Authentication authentication;
+    private AuxMethods auxMethods;
 
     @InjectMocks
     private PostsService postsService;
 
+    private User mockUser;
+    private Post post;
+    private PostRecordDTO postRecordDTO;
     @BeforeEach
     void setUp() {
-        SecurityContextHolder.setContext(securityContext);
+        mockUser = new User();
+        mockUser.setId(1L);
+        post = new Post();
+        post.setId(1L);
+        post.setUser(mockUser);
     }
 
     @Test
     public void testAddPost() {
-        User user = new User();
-        Post post = new Post();
-        post.setCaption("Test caption");
+        when(auxMethods.getAuthenticatedUser()).thenReturn(mockUser);
+        when(postRepository.save(post)).thenReturn(post);
+        when(auxMethods.convertToPostRecordDTO(post)).thenReturn(postRecordDTO);
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("testUser");
-        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
-        when(postRepository.save(any(Post.class))).thenReturn(post);
+        PostRecordDTO result = postsService.addPost(post);
 
-        Post createdPost = postsService.addPost(post);
-        assertEquals("Test caption", createdPost.getCaption());
-        assertEquals(user, createdPost.getUser());
-        verify(postRepository, times(1)).save(post);
-
+        assertEquals(postRecordDTO, result);
+        verify(postRepository, times(1)).save(any(Post.class));
     }
 
     @Test
-    public void testGetPostForCurrentUser() {
-        User user = new User();
+    public void testetPostsForCurrentUser() {
+        when(auxMethods.getAuthenticatedUser()).thenReturn(mockUser);
+        when(postRepository.findByUser(mockUser)).thenReturn(List.of(post));
+        when(auxMethods.convertToPostRecordDTO(post)).thenReturn(postRecordDTO);
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("testUser");
-        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
-        when(postRepository.findByUser(user)).thenReturn(List.of(new Post()));
+        List<PostRecordDTO> result = postsService.getPostsForCurrentUser();
 
-        assertEquals(1, postsService.getPostsForCurrentUser().size());
-        verify(postRepository, times(1)).findByUser(user);
+        assertEquals(1, result.size());
+        assertEquals(postRecordDTO, result.get(0));
+        verify(postRepository, times(1)).findByUser(mockUser);
+    }
+
+    @Test
+    public void testGetPostById() {
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(auxMethods.convertToPostRecordDTO(post)).thenReturn(postRecordDTO);
+
+        PostRecordDTO result = postsService.getPostById(1L);
+
+        assertEquals(postRecordDTO, result);
+        verify(postRepository, times(1)).findById(1L);
     }
 
     @Test
     public void testEditPost() {
-        User user = new User();
-        Post existingPost = new Post();
-        existingPost.setUser(user);
-        existingPost.setId(1L);
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(auxMethods.getAuthenticatedUser()).thenReturn(mockUser);
+        when(postRepository.save(post)).thenReturn(post);
+        when(auxMethods.convertToPostRecordDTO(post)).thenReturn(postRecordDTO);
 
-        Post updatedDetails = new Post();
-        updatedDetails.setCaption("Updated Caption");
+        Post correctedPost = new Post();
+        correctedPost.setCaption("Updated caption");
 
-        when(postRepository.findById(1L)).thenReturn(Optional.of(existingPost));
-        when(postRepository.save(existingPost)).thenReturn(existingPost);
+        PostRecordDTO result = postsService.editPost(1L, correctedPost);
 
-        Post updatedPost = postsService.editPost(1L, updatedDetails);
-        assertEquals("Updated Caption", updatedPost.getCaption());
-        verify(postRepository, times(1)).save(existingPost);
+        assertEquals(postRecordDTO, result);
+        assertEquals("Updated caption", post.getCaption());
+        verify(postRepository, times(1)).save(any(Post.class));
 
+    }
+
+    @Test
+    public void testDeletePost() {
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(auxMethods.getAuthenticatedUser()).thenReturn(mockUser);
+
+        postsService.deletePost(1L);
+
+        verify(postRepository).delete(post);
     }
 }

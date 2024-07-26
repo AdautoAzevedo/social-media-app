@@ -22,9 +22,6 @@ public class PostsService {
     private PostRepository postRepository;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private AuxMethods auxMethods;
 
     @Transactional
