@@ -40,6 +40,9 @@ public class User{
 
     @OneToMany(mappedBy = "user")
     private List<Comment> comments;
+
+    @OneToMany(mappedBy = "user")
+    private List<Like> likes;
     
     public User(String username, String encryptedPassword, String name) {
         this.name = name;

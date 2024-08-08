@@ -1,9 +1,9 @@
 package com.example.socialmediaapp.services;
 
+import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import org.hibernate.mapping.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,6 +13,7 @@ import com.example.socialmediaapp.dtos.CommentResponseDTO;
 import com.example.socialmediaapp.dtos.PostRecordDTO;
 import com.example.socialmediaapp.dtos.UserDTO;
 import com.example.socialmediaapp.models.Comment;
+import com.example.socialmediaapp.models.Like;
 import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.models.User;
 import com.example.socialmediaapp.repositories.UserRepository;
@@ -40,15 +41,20 @@ public class AuxMethods {
     }
 
     public PostRecordDTO convertToPostRecordDTO(Post post) {
+        List<UserDTO> likeUserDTOs = post.getLikes().stream()
+            .map(Like::getUser)
+            .map(this::convertToUserDTO)
+            .collect(Collectors.toList());
+
         PostRecordDTO postRecordDTO = new PostRecordDTO(
             post.getId(), 
             post.getCaption(), 
             convertToUserDTO(post.getUser()), 
             post.getComments().stream()
                     .map(this::convertToCommentResponseDTO)
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toList()),
+            likeUserDTOs);
                 
         return postRecordDTO;
     }
-    
 }

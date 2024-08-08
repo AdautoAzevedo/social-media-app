@@ -4,27 +4,34 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.management.RuntimeErrorException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.socialmediaapp.dtos.PostRecordDTO;
+import com.example.socialmediaapp.models.Like;
 import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.models.User;
+import com.example.socialmediaapp.repositories.LikeRepository;
 import com.example.socialmediaapp.repositories.PostRepository;
 import com.example.socialmediaapp.repositories.UserRepository;
 
 import jakarta.transaction.Transactional;
 
 @Service
+@Transactional
 public class PostsService {
     
     @Autowired
     private PostRepository postRepository;
 
     @Autowired
+    private LikeRepository likeRepository;
+
+    @Autowired
     private AuxMethods auxMethods;
 
-    @Transactional
     public PostRecordDTO addPost(Post post) {
         User currentUser = auxMethods.getAuthenticatedUser();
         post.setUser(currentUser);
@@ -71,5 +78,20 @@ public class PostsService {
         postRepository.delete(post);
     }
 
+    public PostRecordDTO likePost(Long postId) {
+        Post post = postRepository.findById(postId)
+            .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        User currentUser = auxMethods.getAuthenticatedUser();
+        if (likeRepository.existsByUserAndPost(currentUser, post)) {
+            throw new RuntimeException("User already liked this post");
+        }
+
+        Like like = new Like();
+        like.setUser(currentUser);
+        like.setPost(post);
+        likeRepository.save(like);
+        return getPostById(postId);
+    }
     
 }
