@@ -16,10 +16,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-
+import com.example.socialmediaapp.dtos.CommentResponseDTO;
 import com.example.socialmediaapp.dtos.PostRecordDTO;
+import com.example.socialmediaapp.dtos.UserDTO;
+import com.example.socialmediaapp.models.Like;
 import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.models.User;
+import com.example.socialmediaapp.repositories.LikeRepository;
 import com.example.socialmediaapp.repositories.PostRepository;
 import com.example.socialmediaapp.services.AuxMethods;
 import com.example.socialmediaapp.services.PostsService;
@@ -31,6 +34,9 @@ public class PostsServiceTests {
     private PostRepository postRepository;
 
     @Mock
+    private LikeRepository likeRepository;
+
+    @Mock
     private AuxMethods auxMethods;
 
     @InjectMocks
@@ -39,13 +45,23 @@ public class PostsServiceTests {
     private User mockUser;
     private Post post;
     private PostRecordDTO postRecordDTO;
+    private Like like;
     @BeforeEach
     void setUp() {
         mockUser = new User();
         mockUser.setId(1L);
+
         post = new Post();
         post.setId(1L);
         post.setUser(mockUser);
+
+        postRecordDTO = new PostRecordDTO(null, null, null, null, null);
+     
+
+        like = new Like();
+        like.setId(1L);
+        like.setPost(post);
+        like.setUser(mockUser);
     }
 
     @Test
@@ -110,5 +126,25 @@ public class PostsServiceTests {
         postsService.deletePost(1L);
 
         verify(postRepository).delete(post);
+    }
+
+    @Test
+    public void testLikePost() {
+        postRecordDTO = new PostRecordDTO(1L, "testCaption", new UserDTO(1L, mockUser.getUsername()), null, null);
+
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(auxMethods.getAuthenticatedUser()).thenReturn(mockUser);
+        when(likeRepository.existsByUserAndPost(mockUser, post)).thenReturn(false);
+        when(likeRepository.save(any(Like.class))).thenReturn(like);
+        when(auxMethods.convertToPostRecordDTO(post)).thenReturn(postRecordDTO);
+   
+
+        PostRecordDTO response = postsService.likePost(1L);
+
+        assertEquals(like.getPost().getId(), response.postId());
+        assertEquals(like.getUser().getUsername(), response.user().username());
+        verify(likeRepository, times(1)).save(any(Like.class));
+        verify(likeRepository, times(1)).existsByUserAndPost(mockUser, post);
     }
 }
