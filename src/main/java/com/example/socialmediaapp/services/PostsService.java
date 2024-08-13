@@ -4,18 +4,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.management.RuntimeErrorException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.socialmediaapp.dtos.PostRecordDTO;
+import com.example.socialmediaapp.exceptions.PostNotFoundException;
 import com.example.socialmediaapp.models.Like;
 import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.models.User;
 import com.example.socialmediaapp.repositories.LikeRepository;
 import com.example.socialmediaapp.repositories.PostRepository;
-import com.example.socialmediaapp.repositories.UserRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -54,7 +53,7 @@ public class PostsService {
 
     public PostRecordDTO editPost(Long postId, Post correctedPost) {
         Post post = postRepository.findById(postId)
-            .orElseThrow(() -> new RuntimeException("Post not found"));
+            .orElseThrow(() -> new PostNotFoundException("Post not found"));
 
         User currentUser = auxMethods.getAuthenticatedUser();
         if (!post.getUser().equals(currentUser)) {
@@ -68,7 +67,7 @@ public class PostsService {
 
     public void deletePost(Long postId) {
         Post post = postRepository.findById(postId)
-            .orElseThrow(() -> new RuntimeException("Post not found"));
+            .orElseThrow(() -> new PostNotFoundException("Post not found"));
 
         User currentUser = auxMethods.getAuthenticatedUser();
         if (!post.getUser().equals(currentUser)) {
@@ -80,7 +79,7 @@ public class PostsService {
 
     public PostRecordDTO likePost(Long postId) {
         Post post = postRepository.findById(postId)
-            .orElseThrow(() -> new RuntimeException("Post not found"));
+            .orElseThrow(() -> new PostNotFoundException("Post not found"));
 
         User currentUser = auxMethods.getAuthenticatedUser();
         if (likeRepository.existsByUserAndPost(currentUser, post)) {

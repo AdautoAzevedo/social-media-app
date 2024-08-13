@@ -132,14 +132,12 @@ public class PostsServiceTests {
     public void testLikePost() {
         postRecordDTO = new PostRecordDTO(1L, "testCaption", new UserDTO(1L, mockUser.getUsername()), null, null);
 
-
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
         when(auxMethods.getAuthenticatedUser()).thenReturn(mockUser);
         when(likeRepository.existsByUserAndPost(mockUser, post)).thenReturn(false);
         when(likeRepository.save(any(Like.class))).thenReturn(like);
         when(auxMethods.convertToPostRecordDTO(post)).thenReturn(postRecordDTO);
    
-
         PostRecordDTO response = postsService.likePost(1L);
 
         assertEquals(like.getPost().getId(), response.postId());

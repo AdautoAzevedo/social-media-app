@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.socialmediaapp.dtos.CommentDTO;
 import com.example.socialmediaapp.dtos.CommentResponseDTO;
+import com.example.socialmediaapp.exceptions.PostNotFoundException;
 import com.example.socialmediaapp.models.Comment;
 import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.models.User;
@@ -53,7 +54,7 @@ public class CommentService {
 
     public List<CommentResponseDTO> getCommentsForPosts(Long postId) {
         Post post = postRepository.findById(postId)
-            .orElseThrow(() -> new RuntimeException("Post not found"));
+            .orElseThrow(() -> new PostNotFoundException("Post not found"));
         
         List<Comment> comments = commentRepository.findByPost(post);
         return comments.stream()
