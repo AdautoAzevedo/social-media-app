@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.socialmediaapp.dtos.CommentDTO;
 import com.example.socialmediaapp.dtos.CommentResponseDTO;
+import com.example.socialmediaapp.exceptions.CommentNotFoundException;
 import com.example.socialmediaapp.exceptions.PostNotFoundException;
 import com.example.socialmediaapp.models.Comment;
 import com.example.socialmediaapp.models.Post;
@@ -72,7 +73,7 @@ public class CommentService {
 
     public CommentResponseDTO editComment(Long commentId ,Comment correctedComment) {
         Comment comment = commentRepository.findById(commentId)
-            .orElseThrow(() -> new RuntimeException("Comment not found"));
+            .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
 
         User currentUser = auxMethods.getAuthenticatedUser();
         if (!comment.getUser().equals(currentUser)) {
@@ -85,7 +86,7 @@ public class CommentService {
 
     public void deleteComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-            .orElseThrow(() -> new RuntimeException("Comment not found"));
+            .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
 
         User currentUser = auxMethods.getAuthenticatedUser();
         if (!comment.getUser().equals(currentUser)) {
