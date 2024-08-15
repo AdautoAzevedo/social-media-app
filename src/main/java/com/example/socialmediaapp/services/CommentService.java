@@ -5,8 +5,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.example.socialmediaapp.dtos.CommentDTO;
@@ -18,7 +16,6 @@ import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.models.User;
 import com.example.socialmediaapp.repositories.CommentRepository;
 import com.example.socialmediaapp.repositories.PostRepository;
-import com.example.socialmediaapp.repositories.UserRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -29,9 +26,6 @@ public class CommentService {
 
     @Autowired
     private PostRepository postRepository;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired
     private AuxMethods auxMethods;
