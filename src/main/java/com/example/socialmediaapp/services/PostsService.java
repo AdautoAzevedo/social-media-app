@@ -1,7 +1,6 @@
 package com.example.socialmediaapp.services;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -47,8 +46,10 @@ public class PostsService {
     }
 
     public PostRecordDTO getPostById(Long postId) {
-        Optional<Post> post = postRepository.findById(postId);
-        return auxMethods.convertToPostRecordDTO(post.get());
+        Post post = postRepository.findById(postId)
+            .orElseThrow(() -> new PostNotFoundException("Post not found"));
+        
+        return auxMethods.convertToPostRecordDTO(post);
     }
 
     public PostRecordDTO editPost(Long postId, Post correctedPost) {

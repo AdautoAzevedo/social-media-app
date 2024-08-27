@@ -1,7 +1,6 @@
 package com.example.socialmediaapp.services;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +32,11 @@ public class CommentService {
     @Transactional
     public CommentResponseDTO addComment(CommentDTO commentDTO ) {
         User currentUser = auxMethods.getAuthenticatedUser();
-        Optional<Post> currentPost = postRepository.findById(commentDTO.postId());
+        Post currentPost = postRepository.findById(commentDTO.postId())
+            .orElseThrow(() -> new PostNotFoundException("Post not found"));
+        
         Comment comment = new Comment();
-        comment.setPost(currentPost.get());
+        comment.setPost(currentPost);
         comment.setUser(currentUser);
         comment.setText(commentDTO.text());
         Comment createdComment = commentRepository.save(comment);
@@ -43,8 +44,10 @@ public class CommentService {
     }
 
     public CommentResponseDTO getCommentById(Long commentId) {
-        Optional<Comment> comment = commentRepository.findById(commentId);
-        return auxMethods.convertToCommentResponseDTO(comment.get());
+        Comment comment = commentRepository.findById(commentId)
+            .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
+
+        return auxMethods.convertToCommentResponseDTO(comment);
     }
 
     public List<CommentResponseDTO> getCommentsForPosts(Long postId) {
