@@ -1,7 +1,9 @@
 package com.example.socialmediaapp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.example.socialmediaapp.dtos.CommentResponseDTO;
 import com.example.socialmediaapp.dtos.PostRecordDTO;
 import com.example.socialmediaapp.dtos.UserDTO;
+import com.example.socialmediaapp.exceptions.PostNotFoundException;
 import com.example.socialmediaapp.models.Like;
 import com.example.socialmediaapp.models.Post;
 import com.example.socialmediaapp.models.User;
@@ -144,5 +147,37 @@ public class PostsServiceTests {
         assertEquals(like.getUser().getUsername(), response.user().username());
         verify(likeRepository, times(1)).save(any(Like.class));
         verify(likeRepository, times(1)).existsByUserAndPost(mockUser, post);
+    }
+
+    @Test
+    public void testGetPostById_PostNotFound() {
+        when(postRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(PostNotFoundException.class, () -> postsService.getPostById(1L));
+
+        verify(postRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    public void testDeletePost_Unautorized() {
+        User anotherUser = new User();
+        anotherUser.setId(2L);
+
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(auxMethods.getAuthenticatedUser()).thenReturn(anotherUser);
+        
+        assertThrows(RuntimeException.class, () -> postsService.deletePost(1L));
+
+        verify(postRepository, never()).delete(post);
+    }
+
+    @Test
+    public void testLikePost_AlreadyLiked() {
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(auxMethods.getAuthenticatedUser()).thenReturn(mockUser);
+        when(likeRepository.existsByUserAndPost(mockUser, post)).thenReturn(true);
+
+        assertThrows(RuntimeException.class, () -> postsService.likePost(1L));
+        verify(likeRepository, never()).save(any(Like.class));
     }
 }
